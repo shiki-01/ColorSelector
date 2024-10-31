@@ -36,7 +36,11 @@
 
     import ColorPicker from "$lib/components/ColorPicker.svelte";
 </script>
-<ColorPicker bind:color={$selectedColor} />
+
+<div class="p-10">
+    <ColorPicker />
+</div>
+
 <div>
     <h1>Color Picker</h1>
 
