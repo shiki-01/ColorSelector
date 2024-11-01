@@ -233,33 +233,60 @@
         cmyk = rgbToCmyk(rgb);
     }
 
-    const handleMouseDown = (e: MouseEvent) => {
+    const handleMouseDown = (_e: MouseEvent) => {
         const handleMouseMove = (e: MouseEvent) => {
-            hsv.s = Math.max(0, Math.min(100, Math.round((e.offsetX))));
-            hsv.v = Math.max(0, Math.min(100, Math.round((e.offsetY))));
+            hsv.s = Math.max(0, Math.min(255, Math.round(e.offsetX)));
+            hsv.v = Math.max(0, Math.min(255, Math.round(e.offsetY)));
             updateFromHsv();
         }
 
         const handleMouseUp = () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
+            window.removeEventListener('pointermove', handleMouseMove);
+            window.removeEventListener('pointerup', handleMouseUp);
         }
 
-        window.addEventListener('mousemove', handleMouseMove);
-        window.addEventListener('mouseup', handleMouseUp);
+        window.addEventListener('pointermove', handleMouseMove);
+        window.addEventListener('pointerup', handleMouseUp);
     }
 
     const handleMouseMove = (e: MouseEvent) => {
         if (e.buttons === 1) {
-            hsv.s = Math.max(0, Math.min(100, Math.round((e.offsetX))));
-            hsv.v = Math.max(0, Math.min(100, Math.round((e.offsetY))));
+            hsv.s = Math.max(0, Math.min(255, Math.round(e.offsetX)));
+            hsv.v = Math.max(0, Math.min(255, Math.round(e.offsetY)));
             updateFromHsv();
         }
     }
 
     const handleMouseUp = () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
+        window.removeEventListener('pointermove', handleMouseMove);
+        window.removeEventListener('pointerup', handleMouseUp);
+    }
+
+    const handleHSVDown = (_e: MouseEvent) => {
+        const handleMouseMove = (e: MouseEvent) => {
+            hsv.h = Math.max(0, Math.min(360, Math.round(e.offsetX)));
+            updateFromHue();
+        }
+
+        const handleMouseUp = () => {
+            window.removeEventListener('pointermove', handleMouseMove);
+            window.removeEventListener('pointerup', handleMouseUp);
+        }
+
+        window.addEventListener('pointermove', handleMouseMove);
+        window.addEventListener('pointerup', handleMouseUp);
+    }
+
+    const handleHSVMove = (e: MouseEvent) => {
+        if (e.buttons === 1) {
+            hsv.h = Math.max(0, Math.min(360, Math.round(e.offsetX)));
+            updateFromHue();
+        }
+    }
+
+    const handleHSVUp = () => {
+        window.removeEventListener('pointermove', handleHSVMove);
+        window.removeEventListener('pointerup', handleHSVUp);
     }
 
     let rgb = {r: 66, g: 135, b: 245};
@@ -269,6 +296,8 @@
     let hex = rgbToHex(rgb);
 
     let canvas: HTMLCanvasElement | null = null;
+
+    let hsvCanves: HTMLCanvasElement | null = null;
 
     $: if (canvas) {
         const ctx = canvas.getContext('2d');
@@ -286,32 +315,66 @@
             ctx.fillRect(0, 0, 255, 255);
         }
     }
+
+    $: if (hsvCanves) {
+        const ctx = hsvCanves.getContext('2d');
+        if (ctx) {
+            const gradient = ctx.createLinearGradient(0, 0, 255, 0);
+            gradient.addColorStop(0, 'hsl(0, 100%, 50%)');
+            gradient.addColorStop(1 / 6, 'hsl(60, 100%, 50%)');
+            gradient.addColorStop(2 / 6, 'hsl(120, 100%, 50%)');
+            gradient.addColorStop(3 / 6, 'hsl(180, 100%, 50%)');
+            gradient.addColorStop(4 / 6, 'hsl(240, 100%, 50%)');
+            gradient.addColorStop(5 / 6, 'hsl(300, 100%, 50%)');
+            gradient.addColorStop(1, 'hsl(360, 100%, 50%)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 255, 5);
+        }
+    }
 </script>
 
-<div class="">
+<div class="flex flex-col gap-10">
     <div
         class="relative"
         role="button"
         tabindex="0"
     >
-        <canvas
-            width="255"
-            height="255"
-            bind:this={canvas}
-            on:mousedown={handleMouseDown}
-            on:mousemove={handleMouseMove}
-            on:mouseup={handleMouseUp}
-        ></canvas>
+        <div class="w-fit rounded-lg overflow-hidden shadow-lg shadow-slate-800/20">
+            <canvas
+                width="255"
+                height="255"
+                bind:this={canvas}
+                on:pointerdown={handleMouseDown}
+                on:pointermove={handleMouseMove}
+                on:pointerup={handleMouseUp}
+            ></canvas>
+        </div>
         <div
             class="absolute top-0 left-0 w-[20px] h-[20px] border-2 border-white rounded-full"
             style="
-            transform: translate({hsv.s * 2.55}%, {hsv.v * 2.55}%);
-            background-color: hsl({hsv.h}, 100%, 50%);
+            transform: translate(calc({hsv.s}px - 50%), calc({hsv.v}px - 50%));
+            background-color: {hex};
         "
         ></div>
     </div>
 
-    <input type="range" min="0" max="360" bind:value={hsv.h} on:input={updateFromHue}/>
+    <div class="relative w-fit">
+        <canvas
+            width="255"
+            height="5"
+            bind:this={hsvCanves}
+            on:pointerdown={handleHSVDown}
+            on:pointermove={handleHSVMove}
+            on:pointerup={handleHSVUp}
+        ></canvas>
+        <div
+            class="absolute top-1/2 left-0 w-[20px] h-[20px] border-2 border-white shadow-lg shadow-slate-800/20 rounded-full pointer-events-none"
+            style="
+                transform: translate(calc({hsv.h / 360 * 255}px - 10px), -50%);
+                background-color: hsl({hsv.h}, 100%, 50%);
+            "
+        ></div>
+    </div>
 
     <div class="flex flex-col gap-5">
         <div>
